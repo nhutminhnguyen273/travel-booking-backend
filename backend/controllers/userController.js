@@ -1,4 +1,3 @@
-const userRepository = require('../repositories/userRepository');
 const UserService = require('../services/userService');
 
 class UserController {
@@ -79,7 +78,7 @@ class UserController {
 
     async deleteUser(req, res) {
         try {
-            await userRepository.deleteUser(req.params.id);
+            await UserService.deleteUser(req.params.id);
             res.status(200).json({
                 message: "Xóa thành công"
             });
