@@ -18,7 +18,7 @@ class AuthController {
 
     async login(req, res) {
         try {
-            const user = await AuthService.login(req.body.username, req.body.password);
+            const user = await AuthService.login(req.body.username, req.body.password, res);
             res.status(200).json({
                 message: "Đăng nhập thành công",
                 data: user
@@ -26,6 +26,32 @@ class AuthController {
         } catch(err) {
             res.status(500).json({
                 message: "Lỗi khi đăng nhập",
+                error: err.message
+            });
+        }
+    }
+
+    async refreshToken(req, res) {
+        try {
+            const token = await AuthService.requestRefreshToken(req);
+            res.status(200).json({
+                message: "Refresh thành công",
+                data: token
+            });
+        }catch(err) {
+            res.status(500).json({
+                message: "Lỗi khi refresh",
+                error: err.message
+            });
+        }
+    }
+
+    async logout(req, res) {
+        try {
+            res.status(200).json(await AuthService.logout(req, res));
+        }catch(err) {
+            res.status(500).json({
+                message: "Lỗi khi đăng xuất",
                 error: err.message
             });
         }
