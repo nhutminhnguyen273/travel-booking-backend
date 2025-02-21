@@ -7,6 +7,7 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const tourRoutes = require('./routes/tourRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/users', userRoutes);
 app.use('/auth', authRoutes);
 app.use('/tours', tourRoutes);
 app.use('/booking', bookingRoutes);
+app.use('/payment', paymentRoutes);
 
 app.listen(process.env.PORT, () => {
     console.log("Server is running");
