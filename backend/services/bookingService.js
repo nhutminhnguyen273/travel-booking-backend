@@ -49,3 +49,4 @@ class BookingService {
         return await BookingRepository.getBookingById(bookingId);
     }
 }
+module.exports = new BookingService();
