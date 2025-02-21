@@ -20,14 +20,6 @@ const TourSchema = new mongoose.Schema(
         numberOfDays: {
             type: Number
         },
-        startTime: {
-            type: String,
-            trim: true
-        },
-        endTime: {
-            type: String,
-            trim: true
-        },
         schedule: {
             type: [String]
         },
