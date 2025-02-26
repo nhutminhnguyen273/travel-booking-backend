@@ -1,4 +1,4 @@
 const paymentMethodEnum = Object.freeze({
-    VNPAY: "VNPay"
+    VNPAY: "VNPAY"
 });
 module.exports = paymentMethodEnum;
