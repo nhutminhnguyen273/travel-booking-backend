@@ -1,29 +1,22 @@
-const { default: mongoose } = require("mongoose");
-const PaymentService = require("../services/PaymentService");
+const PaymentService = require("../services/paymentService");
 
 class PaymentController {
-    async createVNPayPayment(req, res) {
+    async createPaymentURL(req, res) {
         try {
             const { bookingId, amount } = req.body;
-            const userId = req.user.id;
-            const paymentData = {
-                bookingId,
-                amount,
-                userId
-            };
-            const paymentUrl = await PaymentService.createVNPayPayment(paymentData);
-            res.status(200).json({ success: true, paymentUrl });
+            const paymentUrl = await PaymentService.createVNPayPayment({ bookingId, amount });
+            res.json({ success: true, paymentUrl });
         } catch (error) {
-            res.status(400).json({ success: false, message: error.message });
+            res.status(500).json({ success: false, message: error.message });
         }
     }
 
-    async vnpayReturn(req, res) {
+    async handleVNPayReturn(req, res) {
         try {
-            const result = await PaymentService.processVNPayReturn(req.query);
-            res.status(200).json(result);
+            const result = await PaymentService.handleVNPayReturn(req.query);
+            res.json(result);
         } catch (error) {
-            res.status(400).json({ success: false, message: error.message });
+            res.status(500).json({ success: false, message: error.message });
         }
     }
 }

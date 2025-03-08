@@ -8,6 +8,7 @@ const userRoutes = require('./routes/userRoutes');
 const tourRoutes = require('./routes/tourRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const favoritesRoutes = require('./routes/favoritesRoutes');
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use('/users', userRoutes);
 app.use('/tours', tourRoutes);
 app.use('/booking', bookingRoutes);
 app.use('/payment', paymentRoutes);
+app.use('/favorites', favoritesRoutes);
 
 connectDB().then(() => {
     app.listen(process.env.PORT, () => {

@@ -1,107 +1,77 @@
-const PaymentRepository = require('../repositories/paymentRepository');
-const BookingRepository = require('../repositories/bookingRepository');
-const qs = require('qs');
+const querystring = require("qs");
 const crypto = require("crypto");
-const dotenv = require('dotenv');
-const mongoose = require('mongoose');
-
-dotenv.config();
+const moment = require("moment");
+const vnpayConfig = require("../config/vnpayConfig");
 
 class PaymentService {
-    async createVNPayPayment({ bookingId, userId, amount }) {
-        const tmnCode = process.env.VNP_TMNCODE;
-        const secretKey = process.env.VNP_HASHSECRET;
-        const vnpUrl = process.env.VNP_URL;
-        const returnUrl = process.env.VNP_RETURN_URL;
+    async createVNPayPayment({ bookingId, amount }) {
+        process.env.TZ = "Asia/Ho_Chi_Minh";
+        let date = new Date();
+        let createDate = moment(date).format("YYYYMMDDHHmmss");
 
-        // Kiểm tra giá trị hợp lệ
-        // if (!bookingId || !user || !amount) {
-        //     throw new Error("Thiếu thông tin bookingId, user hoặc amount.");
-        // }
+        let ipAddr = "127.0.0.1"; // Nếu chạy server thật, lấy IP từ request
+        let orderId = moment(date).format("DDHHmmss");
 
-        if (isNaN(amount) || amount <= 0) {
-            throw new Error("Số tiền thanh toán không hợp lệ.");
-        }
-
-        // Tạo order ID duy nhất
-        const orderId = Date.now().toString();
-
-        // Định dạng ngày tháng (YYYYMMDDHHmmss)
-        const createDate = new Date();
-        const formattedDate = `${createDate.getFullYear()}${("0" + (createDate.getMonth() + 1)).slice(-2)}${(
-            "0" + createDate.getDate()
-        ).slice(-2)}${("0" + createDate.getHours()).slice(-2)}${("0" + createDate.getMinutes()).slice(-2)}${(
-            "0" + createDate.getSeconds()
-        ).slice(-2)}`;
-
-        // Dữ liệu gửi đến VNPay
         let vnp_Params = {
             vnp_Version: "2.1.0",
             vnp_Command: "pay",
-            vnp_TmnCode: tmnCode,
-            vnp_Amount: amount * 100, // VNPay yêu cầu số tiền nhân 100
+            vnp_TmnCode: vnpayConfig.vnp_TmnCode,
+            vnp_Locale: "vn",
             vnp_CurrCode: "VND",
             vnp_TxnRef: orderId,
-            vnp_OrderInfo: `Thanh toán đặt tour #${bookingId}`,
+            vnp_OrderInfo: `${bookingId}`,
             vnp_OrderType: "billpayment",
-            vnp_Locale: "vn",
-            vnp_ReturnUrl: returnUrl,
-            vnp_CreateDate: formattedDate,
+            vnp_Amount: amount * 100, // VNPay yêu cầu đơn vị VND x100
+            vnp_ReturnUrl: vnpayConfig.vnp_ReturnUrl,
+            vnp_IpAddr: ipAddr,
+            vnp_CreateDate: createDate
         };
 
-        // Sắp xếp params theo thứ tự alphabet
-        vnp_Params = Object.fromEntries(Object.entries(vnp_Params).sort());
+        vnp_Params = this.sortObject(vnp_Params);
 
-        // Tạo chuỗi ký
-        const signData = qs.stringify(vnp_Params, { encode: false });
-        const hmac = crypto.createHmac("sha512", secretKey);
+        // ✅ **Tạo chữ ký SHA512**
+        const signData = querystring.stringify(vnp_Params, { encode: false });
+        const hmac = crypto.createHmac("sha512", vnpayConfig.vnp_HashSecret);
         const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-        // Gán signature vào params
         vnp_Params["vnp_SecureHash"] = signed;
-
-        // Tạo URL thanh toán
-        const paymentUrl = `${vnpUrl}?${qs.stringify(vnp_Params)}`;
-
-        await PaymentRepository.createPayment({
-            booking: new mongoose.Types.ObjectId(bookingId),
-            user: new mongoose.Types.ObjectId(userId),
-            amount,
-            paymentMethod: "VNPay",
-            transactionId: orderId,
-            paymentStatus: "Pending"
-        });        
+        const paymentUrl = `${vnpayConfig.vnp_Url}?${querystring.stringify(vnp_Params, { encode: false })}`;
 
         return paymentUrl;
     }
 
-    async processVNPayReturn(query) {
-        const secretKey = process.env.VNP_HASHSECRET;
-        const receivedHash = query["vnp_SecureHash"];
-        delete query["vnp_SecureHash"];
-        delete query["vnp_SecureHashType"];
+    async handleVNPayReturn(query) {
+        let vnp_Params = query;
+        let secureHash = vnp_Params["vnp_SecureHash"];
 
-        // Sắp xếp và tạo chuỗi ký
-        const sortedParams = Object.fromEntries(Object.entries(query).sort());
-        const signData = qs.stringify(sortedParams, { encode: false });
+        delete vnp_Params["vnp_SecureHash"];
+        delete vnp_Params["vnp_SecureHashType"];
 
-        const hmac = crypto.createHmac("sha512", secretKey);
-        const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+        vnp_Params = this.sortObject(vnp_Params);
 
-        if (signed !== receivedHash) {
-            throw new Error("Chữ ký không hợp lệ.");
-        }
+        let signData = querystring.stringify(vnp_Params, { encode: false });
+        let hmac = crypto.createHmac("sha512", vnpayConfig.vnp_HashSecret);
+        let signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-        const transactionId = query["vnp_TxnRef"];
-        const responseCode = query["vnp_ResponseCode"];
-
-        if (responseCode === "00") {
-            await PaymentRepository.updatePayment(transactionId, { paymentStatus: "Paid", paidAt: new Date() });
-            return { success: true, message: "Thanh toán thành công" };
+        if (secureHash === signed) {
+            const { vnp_TxnRef, vnp_ResponseCode, vnp_PayDate } = query;
+            if (vnp_ResponseCode === "00") {
+                return { success: true, message: "Payment successful", transactionId: vnp_TxnRef };
+            }
+            return { success: false, message: "Payment failed", transactionId: vnp_TxnRef };
         } else {
-            await PaymentRepository.updatePayment(transactionId, { paymentStatus: "Failed" });
-            return { success: false, message: "Thanh toán thất bại" };
+            return { success: false, message: "Checksum failed - Chữ ký không hợp lệ" };
         }
     }
+
+    sortObject(obj) {
+        let sorted = {};
+        let keys = Object.keys(obj).sort();
+        for (let key of keys) {
+            sorted[key] = obj[key];
+        }
+        return sorted;
+    }
 }
+
 module.exports = new PaymentService();

@@ -1,44 +1,20 @@
 const Payment = require('../models/payment');
-
 class PaymentRepository {
-    async createPayment(payment) {
-        try {
-            return await Payment.create(payment);
-        } catch (error) {
-            throw error;
-        }
+    async createPayment(data) {
+        return await Payment.create(data);
     }
 
-    async findById(id) {
-        try {
-            return await Payment.findById(id).populate("user booking");
-        } catch (error) {
-            throw error;
-        }
+    async findPaymentByTransactionId(transactionId) {
+        return await Payment.findOne({ transactionId });
     }
 
-    async findByTransactionId(transactionId) {
-        try {
-            return await Payment.findOne({transactionId}).populate("user booking");
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    async updatePayment(id, payment) {
-        try {
-            return await Payment.findByIdAndUpdate(id, payment, {new:true});
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    async findAll(filter = {}) {
-        try {
-            return await Payment.find(filter).populate("user booking");
-        } catch (error) {
-            throw error;
-        }
+    async updatePaymentStatus(transactionId, status, paidAt = null) {
+        return await Payment.findOneAndUpdate(
+            { transactionId },
+            { paymentStatus: status, paidAt },
+            { new: true }
+        );
     }
 }
+
 module.exports = new PaymentRepository();

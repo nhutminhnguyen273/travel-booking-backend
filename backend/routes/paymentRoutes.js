@@ -1,9 +1,9 @@
 const express = require("express");
-const router = express.Router();
-const PaymentController = require("../controllers/PaymentController");
+const PaymentController = require("../controllers/paymentController");
 const Middleware = require('../middleware/middleware');
+const router = express.Router();
 
-router.post("/vnpay", Middleware.verifyToken, PaymentController.createVNPayPayment);
-router.get("/vnpay-return", PaymentController.vnpayReturn);
+router.post("/vnpay", Middleware.verifyToken, PaymentController.createPaymentURL);
+router.get("/vnpay_return", PaymentController.handleVNPayReturn);
 
 module.exports = router;
