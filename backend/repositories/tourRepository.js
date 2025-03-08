@@ -6,7 +6,6 @@ class TourRepository {
         try {
             return await Tour.find({ isDeleted: false });
         } catch (error) {
-            console.error(`❌ Error fetching tours: ${error.message}`);
             throw error;
         }
     }
@@ -15,7 +14,6 @@ class TourRepository {
         try {
             return await Tour.find({ type: tourType.DOMESTIC, isDeleted: false });
         } catch (error) {
-            console.error(`❌ Error fetching tours: ${error.message}`);
             throw error;
         }
     }
@@ -24,7 +22,6 @@ class TourRepository {
         try {
             return await Tour.find({ type: tourType.INTERNATIONAL, isDeleted: false });
         } catch (error) {
-            console.error(`❌ Error fetching tours: ${error.message}`);
             throw error;
         }
     }
@@ -33,7 +30,6 @@ class TourRepository {
         try {
             return await Tour.findById(id);
         } catch (error) {
-            console.error(`❌ Error finding tour by ID: ${error.message}`);
             throw error;
         }
     }
@@ -42,7 +38,6 @@ class TourRepository {
         try {
             return await Tour.findOne({ title });
         } catch (error) {
-            console.error(`❌ Error finding tour by ID: ${error.message}`);
             throw error;
         }
     }
@@ -51,7 +46,6 @@ class TourRepository {
         try {
             return await Tour.create(tour);
         } catch (error) {
-            console.error(`❌ Error creating tour: ${error.message}`);
             throw error;
         }
     }
@@ -60,7 +54,6 @@ class TourRepository {
         try {
             return await Tour.findByIdAndUpdate(id, tour, { new: true });
         } catch (error) {
-            console.error(`❌ Error updating tour: ${error.message}`);
             throw error;
         }
     }
@@ -69,7 +62,6 @@ class TourRepository {
         try {
             return await Tour.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
         } catch (error) {
-            console.error(`❌ Error deleting tour: ${error.message}`);
             throw error;
         }
     }
@@ -78,7 +70,6 @@ class TourRepository {
         try {
             return await Tour.findByIdAndUpdate(id, { isDeleted: false }, { new: true });
         } catch (error) {
-            console.log(`❌ Error restoring tour: ${error.message}`);
             throw error;
         }
     }

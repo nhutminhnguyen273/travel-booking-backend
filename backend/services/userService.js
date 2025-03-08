@@ -31,7 +31,10 @@ class UserService {
     async createUser(user) {
         try {
             await validateUserFields(user.username, user.email, user.phone);
-            return await UserRepository.createUser(user);
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(user.password, salt);
+            const newUser = await UserRepository.createUser(user);
+            return await UserRepository.createUser(newUser);
         } catch (error) {
             console.error(`❌ Error creating user: ${error.message}`);
             throw error;
