@@ -29,13 +29,13 @@ class PaymentService {
 
         vnp_Params = this.sortObject(vnp_Params);
 
-        // ✅ **Tạo chữ ký SHA512**
-        const signData = querystring.stringify(vnp_Params, { encode: false });
+        // Tạo chuỗi ký tự cần ký
+        const signData = querystring.stringify(vnp_Params, { encode: true });
         const hmac = crypto.createHmac("sha512", vnpayConfig.vnp_HashSecret);
         const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
         vnp_Params["vnp_SecureHash"] = signed;
-        const paymentUrl = `${vnpayConfig.vnp_Url}?${querystring.stringify(vnp_Params, { encode: false })}`;
+        const paymentUrl = `${vnpayConfig.vnp_Url}?${querystring.stringify(vnp_Params, { encode: true })}`;
 
         return paymentUrl;
     }
