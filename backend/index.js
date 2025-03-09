@@ -9,6 +9,7 @@ const tourRoutes = require('./routes/tourRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const favoritesRoutes = require('./routes/favoritesRoutes');
+const statisticalRoutes = require('./routes/statisticalRoutes');
 
 dotenv.config();
 
@@ -18,12 +19,13 @@ app.use(express.json());
 app.use(cors());
 app.use(cookieParser());
 
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
-app.use('/tours', tourRoutes);
-app.use('/booking', bookingRoutes);
-app.use('/payment', paymentRoutes);
-app.use('/favorites', favoritesRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/tours', tourRoutes);
+app.use('/api/booking', bookingRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/favorites', favoritesRoutes);
+app.use('api/statistics', statisticalRoutes);
 
 connectDB().then(() => {
     app.listen(process.env.PORT, () => {
