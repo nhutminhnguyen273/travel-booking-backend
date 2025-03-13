@@ -1,6 +1,6 @@
 const gender = Object.freeze({
-    MALE: "Nam",
-    FEMALE: "Nữ",
-    OTHER: "Khác"
+    MALE: "male",
+    FEMALE: "female",
+    OTHER: "other"
 });
 module.exports = gender;

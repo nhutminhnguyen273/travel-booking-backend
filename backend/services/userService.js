@@ -1,5 +1,6 @@
 const UserRepository = require('../repositories/userRepository');
 const validateUserFields = require('../util/validateUserFields');
+const bcrypt = require('bcrypt');
 
 class UserService {
     async getListUsers() {
@@ -71,6 +72,17 @@ class UserService {
             return await UserRepository.restoreUser(id);
         } catch (error) {
             console.error(`❌ Error restoring user: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async findUserByEmail(email) {
+        try {
+            const user = await UserRepository.findUserByEmail(email);
+            if (!user) throw new Error('Email không tồn tại');
+            return user;
+        } catch (error) {
+            console.error(`❌ Lỗi khi tìm user: ${error.message}`);
             throw error;
         }
     }

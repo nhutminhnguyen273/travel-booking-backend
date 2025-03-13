@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const validateUserFields = require('../util/validateUserFields');
 const Jwt = require('../util/jwt');
 const redisClient = require('../config/redisClient');
+const EmailService = require('../services/emailService');
+const crypto = require('crypto');
 
 class AuthService {
     async register(user, res) {
@@ -76,6 +78,51 @@ class AuthService {
             throw error;
         }
     }
+
+    async forgotPassword(email) {
+        try {
+            const user = await UserRepository.findUserByEmail(email);
+            if (!user) throw new Error("Email không tồn tại");
+
+            // Tạo token đặt lại mật khẩu
+            const token = crypto.randomBytes(32).toString('hex');
+            await UserRepository.saveResetToken(user.id, token);
+
+            // Gửi email đặt lại mật khẩu
+            const resetLink = `http://yourfrontend.com/reset-password?token=${token}`;
+            const emailContent = `
+                <h3>Xin chào ${user.username}!</h3>
+                <p>Bạn đã yêu cầu đặt lại mật khẩu. Nhấn vào link dưới đây để tiếp tục:</p>
+                <a href="${resetLink}">Đặt lại mật khẩu</a>
+                <p>Nếu không phải bạn, vui lòng bỏ qua email này.</p>`;
+
+            await EmailService.sendMail(email, "Đặt lại mật khẩu", emailContent);
+
+            return { message: "Gửi email đặt lại mật khẩu thành công" };
+        } catch (error) {
+            console.error(`❌ Lỗi khi gửi email đặt lại mật khẩu: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async resetPassword(token, newPassword) {
+        try {
+            const user = await UserRepository.findUserByToken(token);
+            if (!user) throw new Error("Token không hợp lệ hoặc đã hết hạn");
+    
+            // Mã hóa mật khẩu mới
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            await UserRepository.updatePassword(user.id, hashedPassword);
+    
+            // Xóa token sau khi reset xong
+            await UserRepository.clearResetToken(user.id);
+    
+            return { message: "Mật khẩu đã được cập nhật" };
+        } catch (error) {
+            console.error(`❌ Lỗi khi đặt lại mật khẩu: ${error.message}`);
+            throw error;
+        }
+    }    
 }
 
 module.exports = new AuthService();

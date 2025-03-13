@@ -5,12 +5,12 @@ class UserController {
         try {
             const listUsers = await UserService.getListUsers();
             res.status(200).json({
-                message: "List users",
+                message: "Danh sách người dùng",
                 data: listUsers
             });
         } catch (err) {
             res.status(500).json({
-                message: "Error",
+                message: "Lỗi",
                 error: err.message
             });
         }
@@ -20,12 +20,12 @@ class UserController {
         try {
             const listUsers = await UserService.getListUsersDeleted();
             res.status(200).json({
-                message: "List deleted users",
+                message: "Danh sách người dùng đã xóa",
                 data: listUsers
             });
         } catch (err) {
             res.status(500).json({
-                message: "Error",
+                message: "Lỗi",
                 error: err.message
             });
         }
@@ -33,14 +33,14 @@ class UserController {
 
     async findUserById(req, res) {
         try {
-            const tour = await UserService.findUserById(req.params.id);
+            const user = await UserService.findUserById(req.params.id);
             res.status(200).json({
-                message: "Finded user",
-                data: tour
+                message: "Tìm người dùng",
+                data: user
             });
         } catch (err) {
             res.status(500).json({
-                message: "Error",
+                message: "Lỗi",
                 error: err.message
             });
         }
@@ -50,12 +50,12 @@ class UserController {
         try {
             const newUser = await UserService.createUser(req.body);
             res.status(200).json({
-                message: "Created user",
+                message: "Tạo tài khoản người dùng",
                 data: newUser
             });
         } catch (err) {
             res.status(500).json({
-                message: "Error",
+                message: "Lỗi",
                 error: err.message
             });
         }
@@ -65,12 +65,12 @@ class UserController {
         try {
             const user = await UserService.updateUser(req.params.id, req.body);
             res.status(200).json({
-                message: "Updated user",
+                message: "Cập nhật thông tin người dùng",
                 data: user
             });
         } catch (err) {
             res.status(500).json({
-                message: "Error",
+                message: "Lỗi",
                 error: err.message
             });
         }
@@ -80,11 +80,11 @@ class UserController {
         try {
             await UserService.deleteUser(req.params.id);
             res.status(200).json({
-                message: "Deleted successfully"
+                message: "Xóa tài khoản thành công"
             });
         } catch (err) {
             res.status(500).json({
-                message: "Error",
+                message: "Lỗi",
                 error: err.message
             });
         }
@@ -94,10 +94,36 @@ class UserController {
         try {
             await UserService.restoreUser(req.params.id);
             res.status(200).json({
-                message: "Restored successfully"
+                message: "Khôi phục tài khoản thành công"
             });
         } catch (err) {
             res.status(500).json({
+                message: "Lỗi",
+                error: err.message
+            });
+        }
+    }
+
+    async findUserByEmail(req, res) {
+        try {
+            const user = await UserService.findUserByEmail(req.body.email);
+            res.status(200).json({
+                message: "Thành công",
+                data: user
+            });
+        } catch (err) {
+            res.status(500).json({
+                message: "Lỗi",
+                error: err.message
+            });
+        }
+    }
+
+    async resetPassword(req, res) {
+        try {
+            const user = await UserService.findUserByEmail(req.body.email);
+        } catch (err) {
+            res.status(404).json({
                 message: "Error",
                 error: err.message
             });

@@ -41,5 +41,31 @@ class AuthController {
             });
         }
     }
+
+    async forgotPassword(req, res) {
+        try {
+            const {email} = req.body;
+            const response = await AuthService.forgotPassword(email);
+            res.status(200).json({
+                message: response
+            });
+        } catch (error) {
+            res.status(500).json({
+                message: "Lỗi",
+                error: error.message
+            });
+        }
+    }
+
+    async resetPassword(req, res) {
+        try {
+            const { token, newPassword } = req.body;
+            const response = await AuthService.resetPassword(token, newPassword);
+            res.status(200).json(response);
+        } catch (error) {
+            res.status(500).json({ message: "Lỗi", error: error.message });
+        }
+    }
+    
 }
 module.exports = new AuthController();

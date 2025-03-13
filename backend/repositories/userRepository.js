@@ -1,4 +1,5 @@
 const User = require('../models/user');
+const bcrypt = require('bcrypt');
 
 class UserRepository {
     async getListUsers() {
@@ -80,6 +81,67 @@ class UserRepository {
             return await User.findByIdAndUpdate(id, { isDeleted: false }, { new: true });
         } catch (error) {
             throw error;
+        }
+    }
+
+    async saveResetToken(userId, hashedToken) {
+        try {
+            return await User.findByIdAndUpdate(
+                userId,
+                {
+                    reset_token: hashedToken,
+                    reset_token_expires: Date.now() + 3600000 // 1 giờ hết hạn
+                },
+                { new: true }
+            );
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async findUserByToken(token) {
+        try {
+            const user = await User.findOne({ reset_token: token });
+            if (!user) throw new Error("Token không hợp lệ hoặc đã hết hạn");
+
+            if (user.reset_token_expires < Date.now()) {
+                throw new Error("Token đã hết hạn");
+            }
+
+            return user;
+        } catch (error) {
+            throw new Error(`Lỗi khi tìm người dùng bằng token: ${error.message}`);
+        }
+    }
+
+    async updatePassword(userId, hashedPassword) {
+        try {
+            return await User.findByIdAndUpdate(
+                userId,
+                {
+                    password: hashedPassword,
+                    reset_token: null,
+                    reset_token_expires: null
+                },
+                { new: true }
+            );
+        } catch (error) {
+            throw new Error(`Lỗi khi cập nhật mật khẩu: ${error.message}`);
+        }
+    }
+
+    async clearResetToken(userId) {
+        try {
+            return await User.findByIdAndUpdate(
+                userId,
+                {
+                    reset_token: null,
+                    reset_token_expires: null
+                },
+                { new: true }
+            );
+        } catch (error) {
+            throw new Error(`Lỗi khi xóa reset token: ${error.message}`);
         }
     }
 };
