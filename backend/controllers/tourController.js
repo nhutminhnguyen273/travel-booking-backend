@@ -1,9 +1,6 @@
 const tourRepository = require('../repositories/tourRepository');
 const TourService = require('../services/tourService');
 const Tour = require('../models/tour');
-const AppError = require('../utils/appError');
-const catchAsync = require('../utils/catchAsync');
-
 class TourController {
     async getListTours(req, res) {
         try {
@@ -127,7 +124,7 @@ class TourController {
         const tour = await Tour.findById(req.params.id);
 
         if (!tour) {
-            return next(new AppError('Không tìm thấy tour với ID này', 404));
+            return next(new Error("Không tìm thấy tour"));
         }
 
         res.status(200).json({

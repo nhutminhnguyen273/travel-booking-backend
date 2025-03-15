@@ -12,4 +12,7 @@ router.post('/', Middleware.verifyToken, BookingController.createBooking);
 router.put('/confirm', Middleware.verifyToken, BookingController.confirmBooking);
 router.put('/cancel', Middleware.verifyToken, BookingController.cancelBooking);
 
+// Thêm route mới
+router.get('/:id', Middleware.verifyToken, BookingController.findBookingById);
+
 module.exports = router;

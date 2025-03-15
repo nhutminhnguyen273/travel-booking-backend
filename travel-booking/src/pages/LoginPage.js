@@ -10,8 +10,12 @@ import Slider2 from '../assets/images/Login/Slider_2.png';
 import Facebook from '../assets/images/icons/facebook.svg';
 import Google from '../assets/images/icons/google.svg';
 import Apple from '../assets/images/icons/apple.svg';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
+    const { login } = useAuth();
+    const navigate = useNavigate();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
@@ -24,20 +28,22 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const response = await axios.post("http://localhost:5000/api/auth/login", {
-                username,
-                password,
-            });
-
-            const { data } = response;
-            localStorage.setItem("token", data.token);
-            if (rememberMe) {
-                localStorage.setItem("username", username);
+            const data = await login(username, password);
+            // Kiểm tra xem có URL redirect không
+            const redirectUrl = localStorage.getItem('redirectUrl');
+            if (redirectUrl) {
+                localStorage.removeItem('redirectUrl');
+                navigate(redirectUrl);
+            } else {
+                navigate('/');
             }
-
-            window.location.href = "/";
         } catch (err) {
-            setError(err.response?.data?.message || "Đăng nhập thất bại");
+            setError(
+                err.response?.data?.error || 
+                err.response?.data?.message || 
+                err.message || 
+                "Đăng nhập thất bại. Vui lòng thử lại."
+            );
         } finally {
             setLoading(false);
         }

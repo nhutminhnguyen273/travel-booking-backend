@@ -21,7 +21,15 @@ class AuthController {
             const user = await AuthService.login(req.body.username, req.body.password, res);
             res.status(200).json({
                 message: "Login successfully",
-                data: user
+                tokens: {
+                    accessToken: user.accessToken,
+                    refreshToken: user.refreshToken
+                },
+                user: {
+                    id: user._id,
+                    username: user.username,
+                    role: user.role
+                }
             });
         } catch (err) {
             res.status(500).json({
