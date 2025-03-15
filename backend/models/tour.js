@@ -72,6 +72,11 @@ const TourSchema = new mongoose.Schema(
         isDeleted: {
             type: Boolean,
             default: false
+        },
+        remainingSeats: {
+            type: Number,
+            required: [true, 'Tour phải có số chỗ'],
+            min: [0, 'Số chỗ không thể âm']
         }
     },
     {timestamps: true}

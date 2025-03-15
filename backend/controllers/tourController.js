@@ -1,5 +1,8 @@
 const tourRepository = require('../repositories/tourRepository');
 const TourService = require('../services/tourService');
+const Tour = require('../models/tour');
+const AppError = require('../utils/appError');
+const catchAsync = require('../utils/catchAsync');
 
 class TourController {
     async getListTours(req, res) {
@@ -119,5 +122,22 @@ class TourController {
             });
         }
     }
+
+    async getTour(req, res, next) {
+        const tour = await Tour.findById(req.params.id);
+
+        if (!tour) {
+            return next(new AppError('Không tìm thấy tour với ID này', 404));
+        }
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                tour,
+                remainingSeats: tour.remainingSeats
+            }
+        });
+    }
 }
+
 module.exports = new TourController();

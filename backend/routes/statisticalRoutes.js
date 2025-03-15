@@ -3,9 +3,12 @@ const router = express.Router();
 const StatisticalController = require("../controllers/statisticalController");
 const Middleware = require('../middleware/middleware');
 
-router.post("/generate", Middleware.verifyTokenAdmin, StatisticalController.generateDailyStatistics);
-router.get("/", Middleware.verifyTokenAdmin, StatisticalController.getAllStatistics);
-router.get("/:id", Middleware.verifyTokenAdmin, StatisticalController.getStatisticsById);
-router.delete("/:id", Middleware.verifyTokenAdmin, StatisticalController.deleteStatistics);
+// Tất cả routes chỉ dành cho Admin
+router.use(Middleware.verifyTokenAdmin);
+
+router.post("/generate", StatisticalController.generateDailyStatistics);
+router.get("/", StatisticalController.getAllStatistics);
+router.get("/:id", StatisticalController.getStatisticsById);
+router.delete("/:id", StatisticalController.deleteStatistics);
 
 module.exports = router;

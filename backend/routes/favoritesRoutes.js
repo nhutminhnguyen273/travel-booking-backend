@@ -3,8 +3,11 @@ const router = express.Router();
 const FavoritesController = require("../controllers/favoritesController");
 const Middleware = require('../middleware/middleware');
 
-router.post("/", Middleware.verifyToken, FavoritesController.addFavorite);
-router.get("/", Middleware.verifyToken, FavoritesController.getUserFavorites);
-router.delete("/:favoriteId", Middleware.verifyToken, FavoritesController.removeFavorite);
+// Tất cả routes yêu cầu authentication
+router.use(Middleware.verifyToken);
+
+router.post("/", FavoritesController.addFavorite);
+router.get("/", FavoritesController.getUserFavorites);
+router.delete("/:favoriteId", FavoritesController.removeFavorite);
 
 module.exports = router;

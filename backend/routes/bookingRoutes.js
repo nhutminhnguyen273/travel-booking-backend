@@ -4,7 +4,10 @@ const Middleware = require('../middleware/middleware');
 
 const router = express.Router();
 
-router.get('/', BookingController.getListBooking);
+// Admin only route
+router.get('/', Middleware.verifyTokenAdmin, BookingController.getListBooking);
+
+// Authenticated user routes
 router.post('/', Middleware.verifyToken, BookingController.createBooking);
 router.put('/confirm', Middleware.verifyToken, BookingController.confirmBooking);
 router.put('/cancel', Middleware.verifyToken, BookingController.cancelBooking);

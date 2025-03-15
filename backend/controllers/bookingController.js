@@ -1,5 +1,8 @@
 const { default: mongoose } = require('mongoose');
 const BookingService = require('../services/bookingService');
+const Tour = require('../models/tour');
+const AppError = require('../utils/appError');
+const catchAsync = require('../utils/catchAsync');
 
 class BookingController {
     async getListBooking(req, res) {
@@ -34,10 +37,19 @@ class BookingController {
         }
     }
 
-    async createBooking(req, res) {
+    async createBooking(req, res, next) {
         try {
             const userId = req.user?.id;
             if (!userId) throw new Error("User not found");
+            const tour = await Tour.findById(req.body.tour);
+            
+            if (tour.remainingSeats <= 0) {
+                return next(new AppError('Tour này đã hết chỗ', 400));
+            }
+
+            tour.remainingSeats -= 1;
+            await tour.save();
+
             const bookingData = {
                 ...req.body,
                 user: new mongoose.Types.ObjectId(userId) // Chuyển thành ObjectId
@@ -85,4 +97,5 @@ class BookingController {
         }
     }
 }
+
 module.exports = new BookingController();

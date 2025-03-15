@@ -4,12 +4,15 @@ const UserController = require('../controllers/userController');
 
 const router = express.Router();
 
-router.get('/', UserController.getListUsers);
-router.get('/user-delete/', UserController.getListUserDeleted);
-router.get('/:id', UserController.findUserById);
-router.post('/', UserController.createUser);
-router.put('/:id', UserController.updateUser);
-router.put('/delete/:id', UserController.deleteUser);
-router.put('/restore/:id', UserController.restoreUser);
+// Routes chỉ dành cho Admin
+router.get('/', Middleware.verifyTokenAdmin, UserController.getListUsers);
+router.get('/user-delete', Middleware.verifyTokenAdmin, UserController.getListUserDeleted);
+router.post('/', Middleware.verifyTokenAdmin, UserController.createUser);
+router.put('/restore/:id', Middleware.verifyTokenAdmin, UserController.restoreUser);
+
+// Routes cho cả Admin và User (người dùng chỉ có thể thao tác với chính tài khoản của mình)
+router.get('/:id', Middleware.verifyTokenAdminAndUser, UserController.findUserById);
+router.put('/:id', Middleware.verifyTokenAdminAndUser, UserController.updateUser);
+router.put('/delete/:id', Middleware.verifyTokenAdminAndUser, UserController.deleteUser);
 
 module.exports = router;
