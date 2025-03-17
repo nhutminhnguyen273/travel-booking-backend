@@ -8,6 +8,7 @@ import BookingPage from "./pages/BookingPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PaymentPage from "./pages/PaymentPage";
+import PaymentResult from "./pages/PaymentResult";
 
 function App() {
   return (
@@ -45,6 +46,9 @@ function App() {
               </ProtectedRoute>
             } 
           />
+
+          {/* Payment Result Routes */}
+          <Route path="/payment/result" element={<PaymentResult />} />
         </Routes>
       </Router>
     </AuthProvider>
