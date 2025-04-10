@@ -5,7 +5,7 @@ class FavoritesController {
         try {
             const userId = req.user.id;
             const {tourId} = req.body;
-            const favorite = await FavoritesService.addFavorite(userId, tourId);
+            const favorite = await FavoritesService.add(userId, tourId);
             res.status(200).json({
                 message: "Thêm vào danh sách yêu thích thành công!",
                 data: favorite

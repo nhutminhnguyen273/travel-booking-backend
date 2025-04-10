@@ -18,7 +18,8 @@ class FavoritesService {
 
     async getList(userId) {
         try {
-            return await Favorites.find({ user: userId }).populate("tours");
+            return await Favorites.find({ user: userId })
+                .populate("tour");
         } catch (error) {
             console.error(`❌ Lỗi không thể lấy danh sách yêu thích: ${error.message}`);
             throw error;

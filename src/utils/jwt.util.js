@@ -7,7 +7,7 @@ class JWT {
                 id: user.id,
                 role: user.role
             },
-            process.env.ACCESS_TOKEN,
+            process.env.JWT_ACCESS_TOKEN,
             { expiresIn: "2h" }
         );
     }
@@ -18,7 +18,7 @@ class JWT {
                 id: user.id,
                 role: user.role
             },
-            process.env.REFRESH_TOKEN,
+            process.env.JWT_REFRESH_TOKEN,
             { expiresIn: "3h" }
         );
     }

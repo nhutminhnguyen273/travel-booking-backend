@@ -1,70 +1,103 @@
-const dotenv = require("dotenv").config();
-const querystring = require("qs");
-const crypto = require("crypto");
-const moment = require("moment");
+const History = require("../models/history.model");
+const PaymentStatus = require("../enums/payment-status.enum");
+const PaymentMethod = require("../enums/payment-method.enum");
+const Stripe = require("stripe");
 
 class PaymentService {
-    async createVNPay({ bookingId, amount }) {
-        process.env.TZ = "Asia/Ho_Chi_Minh";
-        let date = new Date();
-        let createDate = moment(date).format("YYYYMMDDHHmmss");
-        let ipAddr = "127.0.0.1";
-        let orderId = moment(date).format("DDHHmmss");
-        let vnp_Params = {
-            vnp_Version: "2.1.0",
-            vnp_Command: "pay",
-            vnp_TmnCode: process.env.VNP_TIMECODE,
-            vnp_Locale: "vn",
-            vnp_CurrCode: "VND",
-            vnp_TxnRef: orderId,
-            vnp_OrderInfo: `${bookingId}`,
-            vnp_OrderType: "billpayment",
-            vnp_Amount: amount * 100, // VNPay yêu cầu đơn vị VND x100
-            vnp_ReturnUrl: process.env.VNP_RETURN_URL,
-            vnp_IpAddr: ipAddr,
-            vnp_CreateDate: createDate
-        }
+    async createPayment({ bookingId, amount, userId }) {
+        try {
+            console.log("Creating payment with Stripe...");
+            
+            // Initialize Stripe directly in the service
+            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+                apiVersion: '2023-10-16'
+            });
+            
+            // Create a payment intent
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: Math.round(amount * 100),
+                currency: "usd",
+                metadata: {
+                    bookingId,
+                    userId
+                }
+            });
 
-        vnp_Params = this.sortObject(vnp_Params);
-        const signData = querystring.stringify(vnpay_Params, { encode: true });
-        const hmac = crypto.createHmac("sha512", process.env.VNP_HASHSECRET);
-        const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-        vnp_Params["vnp_SecureHash"] = signed;
-        const paymentUrl = `${process.env.VNP_URL}?${querystring.stringify(vnp_Params, { encode: true })}`;
-        return paymentUrl;
+            console.log("Payment intent created:", paymentIntent.id);
+
+            // Create payment history record
+            const history = new History({
+                user: userId,
+                booking: bookingId,
+                amount,
+                paymentMethod: PaymentMethod.Stripe,
+                status: PaymentStatus.Pending,
+                transactionId: paymentIntent.id,
+                metadata: {
+                    clientSecret: paymentIntent.client_secret
+                }
+            });
+            await history.save();
+
+            return {
+                clientSecret: paymentIntent.client_secret
+            };
+        } catch (error) {
+            console.error("Error creating payment:", error);
+            throw error;
+        }
     }
 
-    async handleVNPayReturn(query) {
-        let vnp_Params = query;
-        let secureHash = vnp_Params["vnp_SecureHash"];
+    async handleWebhook(signature, payload) {
+        try {
+            // Initialize Stripe directly in the service
+            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+                apiVersion: '2023-10-16'
+            });
+            
+            const event = stripe.webhooks.constructEvent(
+                payload,
+                signature,
+                process.env.STRIPE_WEBHOOK_SECRET
+            );
 
-        delete vnp_Params["vnp_SecureHash"];
-        delete vnp_Params["vnp_SecureHashType"];
-
-        vnp_Params = this.sortObject(vnp_Params);
-
-        let signData = querystring.stringify(vnp_Params, { encode: false });
-        let hmac = crypto.createHmac("sha512", process.env.VNP_HASHSECRET);
-        let signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-
-        if (secureHash === signed) {
-            const { vnp_TxnRef, vnp_ResponseCode, vnp_PayDate } = query;
-            if (vnp_ResponseCode === "00") {
-                return { success: true, message: "Payment successful", transactionId: vnp_TxnRef };
+            switch (event.type) {
+                case 'payment_intent.succeeded':
+                    await this.handlePaymentSuccess(event.data.object);
+                    break;
+                case 'payment_intent.payment_failed':
+                    await this.handlePaymentFailure(event.data.object);
+                    break;
             }
-            return { success: false, message: "Payment failed", transactionId: vnp_TxnRef };
-        } else {
-            return { success: false, message: "Checksum failed - Chữ ký không hợp lệ" };
+
+            return { received: true };
+        } catch (error) {
+            console.error("Error handling webhook:", error);
+            throw error;
         }
     }
 
-    sortObject(obj) {
-        let sorted = {};
-        let keys = Object.keys(obj).sort();
-        for (let key of keys) {
-            sorted[key] = obj[key];
+    async handlePaymentSuccess(paymentIntent) {
+        const history = await History.findOne({ transactionId: paymentIntent.id });
+        if (history) {
+            history.status = PaymentStatus.Paid;
+            history.paymentDate = new Date();
+            await history.save();
         }
-        return sorted;
+    }
+
+    async handlePaymentFailure(paymentIntent) {
+        const history = await History.findOne({ transactionId: paymentIntent.id });
+        if (history) {
+            history.status = PaymentStatus.Cancelled;
+            await history.save();
+        }
+    }
+
+    async getPaymentHistory(userId) {
+        return await History.find({ user: userId })
+            .populate('booking')
+            .sort({ createdAt: -1 });
     }
 }
 
