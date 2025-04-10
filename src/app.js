@@ -39,7 +39,7 @@ app.use("/api/booking", BookingRoutes);
 app.use("/api/favorites", FavoritesRoutes);
 app.use("/api/payment", PaymentRoutes);
 app.use("/api/statistical", StatisticalRoutes);
-app.use("/api/contact", ContactRoutes);
+app.use("/api/contacts", ContactRoutes);
 app.use("/api/vouchers", VoucherRoutes);
 app.use("/api/blogs", BlogRoutes);
 
