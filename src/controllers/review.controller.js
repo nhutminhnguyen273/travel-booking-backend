@@ -20,8 +20,16 @@ class ReviewController {
     async createReview(req, res) {
         try {
             const userId = req.user.id;
-            const tourId = req.params.id;
-            const review = await ReviewService.create(userId, tourId, req.body);
+            const { tourId, star, comment } = req.body;
+            
+            if (!tourId) {
+                return res.status(400).json({
+                    message: "Lỗi",
+                    error: "Thiếu thông tin tour"
+                });
+            }
+            
+            const review = await ReviewService.create(userId, tourId, { star, comment });
             res.status(200).json({
                 message: "Đánh giá thành công!",
                 data: review

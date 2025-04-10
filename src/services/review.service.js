@@ -43,8 +43,8 @@ class ReviewService {
     async getList(tourId) {
         try {
             return await Review.find({ tour: tourId })
-                .populate("users", "name avatar")
-                .sort({ createAt: -1 });
+                .populate("user", "name avatar")
+                .sort({ createdAt: -1 });
         } catch (error) {
             console.error(`Lỗi khi lấy danh sách đánh giá: ${error.message}`);
             throw error;

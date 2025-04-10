@@ -10,6 +10,10 @@ const ReviewRoutes = require("./routes/review.route");
 const BookingRoutes = require("./routes/booking.route");
 const FavoritesRoutes = require("./routes/favorites.route");
 const PaymentRoutes = require("./routes/payment.route");
+const StatisticalRoutes = require("./routes/statistical.route");
+const ContactRoutes = require("./routes/contact.route");
+const VoucherRoutes = require("./routes/voucher.route");
+const BlogRoutes = require("./routes/blog.route");
 
 dotenv.config();
 
@@ -34,6 +38,10 @@ app.use("/api/reviews", ReviewRoutes);
 app.use("/api/booking", BookingRoutes);
 app.use("/api/favorites", FavoritesRoutes);
 app.use("/api/payment", PaymentRoutes);
+app.use("/api/statistical", StatisticalRoutes);
+app.use("/api/contact", ContactRoutes);
+app.use("/api/vouchers", VoucherRoutes);
+app.use("/api/blogs", BlogRoutes);
 
 connectDB().then(() => {
     app.listen(process.env.PORT, () => {
