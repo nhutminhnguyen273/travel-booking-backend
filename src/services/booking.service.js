@@ -16,8 +16,9 @@ class BookingService {
                 totalAmount: bookingData.totalAmount
             });
 
-            // Tạo payment
+            // Tạo payment với đầy đủ thông tin
             const payment = await PaymentService.createPayment({
+                user: userId,
                 booking: newBooking._id,
                 amount: bookingData.totalAmount,
                 method: bookingData.paymentMethod,

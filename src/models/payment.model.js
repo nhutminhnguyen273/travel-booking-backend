@@ -5,41 +5,65 @@ const PaymentStatus = require("../enums/payment-status.enum");
 
 const PaymentSchema = new mongoose.Schema(
     {
-        booking: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "booking",
-            required: true
-        },
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "users",
-            required: true
+            required: [true, "Vui lòng cung cấp thông tin người dùng"],
         },
-        currency: {
-            type: String,
-            enum: Object.values(Currency),
-            required: true,
-            default: Currency.VND
+        booking: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "bookings",
+            required: [true, "Vui lòng cung cấp thông tin đặt tour"],
         },
-        paymentMethod: {
+        amount: {
+            type: Number,
+            required: [true, "Vui lòng nhập số tiền"],
+            min: [0, "Số tiền không được âm"],
+        },
+        method: {
             type: String,
-            enum: Object.values(PaymentMethod),
-            default: PaymentMethod.VNPay
+            required: [true, "Vui lòng chọn phương thức thanh toán"],
+            enum: ["stripe", "momo", "vnpay", "bank_transfer"],
+        },
+        status: {
+            type: String,
+            required: [true, "Vui lòng cung cấp trạng thái thanh toán"],
+            enum: ["pending", "completed", "failed", "refunded"],
+            default: "pending",
         },
         transactionId: {
             type: String,
+            required: [true, "Vui lòng cung cấp mã giao dịch"],
             unique: true,
-            required: true
         },
-        paymentStatus: {
-            type: String,
-            enum: Object.values(PaymentStatus),
-            default: PaymentStatus.Pending
+        paymentDetails: {
+            type: Map,
+            of: String,
         },
-        paidAt: {
-            type: Date,
-        }
+        refundDetails: {
+            refundId: String,
+            refundAmount: Number,
+            refundReason: String,
+            refundedAt: Date,
+        },
+        isDeleted: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    {
+        timestamps: true,
     }
 );
 
-module.exports = mongoose.model("payments", PaymentSchema);
+// Kiểm tra payment có thể hoàn tiền không
+PaymentSchema.methods.canRefund = function() {
+    return this.status === "completed";
+};
+
+// Lấy thông tin hoàn tiền
+PaymentSchema.methods.getRefundDetails = function() {
+    return this.refundDetails;
+};
+
+module.exports = mongoose.model("Payment", PaymentSchema);

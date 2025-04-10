@@ -3,6 +3,7 @@ const PaymentStatus = require("../enums/payment-status.enum");
 const PaymentMethod = require("../enums/payment-method.enum");
 const Stripe = require("stripe");
 const Payment = require("../models/payment.model");
+const crypto = require("crypto");
 
 class PaymentService {
     async createPayment({ bookingId, amount, userId }) {
@@ -103,7 +104,15 @@ class PaymentService {
 
     async createPayment(paymentData) {
         try {
-            const payment = await Payment.create(paymentData);
+            // Tạo mã giao dịch ngẫu nhiên
+            const transactionId = crypto.randomBytes(16).toString("hex");
+
+            const payment = await Payment.create({
+                ...paymentData,
+                transactionId,
+                paymentDetails: new Map()
+            });
+
             return payment;
         } catch (error) {
             console.error(`❌ Lỗi khi tạo thanh toán: ${error.message}`);
@@ -111,11 +120,14 @@ class PaymentService {
         }
     }
 
-    async updatePaymentStatus(paymentId, status) {
+    async updatePaymentStatus(paymentId, status, paymentDetails = {}) {
         try {
             const payment = await Payment.findByIdAndUpdate(
                 paymentId,
-                { status },
+                { 
+                    status,
+                    paymentDetails: new Map(paymentDetails)
+                },
                 { new: true }
             );
             
@@ -130,18 +142,28 @@ class PaymentService {
         }
     }
 
-    async refundPayment(paymentId) {
+    async refundPayment(paymentId, refundDetails) {
         try {
             const payment = await Payment.findById(paymentId);
             if (!payment) {
                 throw new Error("Không tìm thấy thông tin thanh toán");
             }
 
+            if (!payment.canRefund()) {
+                throw new Error("Không thể hoàn tiền cho thanh toán này");
+            }
+
             // Thực hiện hoàn tiền qua cổng thanh toán
             // TODO: Implement refund logic with payment gateway
 
-            // Cập nhật trạng thái payment
+            // Cập nhật thông tin hoàn tiền
             payment.status = "refunded";
+            payment.refundDetails = {
+                refundId: crypto.randomBytes(16).toString("hex"),
+                refundAmount: payment.amount,
+                refundReason: refundDetails.reason || "Khách hàng yêu cầu hoàn tiền",
+                refundedAt: new Date()
+            };
             await payment.save();
 
             return payment;
@@ -154,7 +176,8 @@ class PaymentService {
     async getPaymentById(paymentId) {
         try {
             const payment = await Payment.findById(paymentId)
-                .populate("booking", "tour user totalAmount");
+                .populate("user", "name email")
+                .populate("booking", "tour totalAmount");
                 
             if (!payment) {
                 throw new Error("Không tìm thấy thông tin thanh toán");
@@ -172,6 +195,38 @@ class PaymentService {
             const payments = await Payment.find({ booking: bookingId })
                 .sort("-createdAt");
             return payments;
+        } catch (error) {
+            console.error(`❌ Lỗi khi lấy danh sách thanh toán: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async getPaymentsByUser(userId, query = {}) {
+        try {
+            const { page = 1, limit = 10, status, sort = "-createdAt" } = query;
+            const filter = { user: userId };
+            
+            if (status) {
+                filter.status = status;
+            }
+
+            const payments = await Payment.find(filter)
+                .populate("booking", "tour totalAmount")
+                .sort(sort)
+                .skip((page - 1) * limit)
+                .limit(limit);
+
+            const total = await Payment.countDocuments(filter);
+
+            return {
+                payments,
+                pagination: {
+                    total,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil(total / limit)
+                }
+            };
         } catch (error) {
             console.error(`❌ Lỗi khi lấy danh sách thanh toán: ${error.message}`);
             throw error;
