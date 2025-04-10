@@ -2,6 +2,7 @@ const History = require("../models/history.model");
 const PaymentStatus = require("../enums/payment-status.enum");
 const PaymentMethod = require("../enums/payment-method.enum");
 const Stripe = require("stripe");
+const Payment = require("../models/payment.model");
 
 class PaymentService {
     async createPayment({ bookingId, amount, userId }) {
@@ -98,6 +99,83 @@ class PaymentService {
         return await History.find({ user: userId })
             .populate('booking')
             .sort({ createdAt: -1 });
+    }
+
+    async createPayment(paymentData) {
+        try {
+            const payment = await Payment.create(paymentData);
+            return payment;
+        } catch (error) {
+            console.error(`❌ Lỗi khi tạo thanh toán: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async updatePaymentStatus(paymentId, status) {
+        try {
+            const payment = await Payment.findByIdAndUpdate(
+                paymentId,
+                { status },
+                { new: true }
+            );
+            
+            if (!payment) {
+                throw new Error("Không tìm thấy thông tin thanh toán");
+            }
+
+            return payment;
+        } catch (error) {
+            console.error(`❌ Lỗi khi cập nhật trạng thái thanh toán: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async refundPayment(paymentId) {
+        try {
+            const payment = await Payment.findById(paymentId);
+            if (!payment) {
+                throw new Error("Không tìm thấy thông tin thanh toán");
+            }
+
+            // Thực hiện hoàn tiền qua cổng thanh toán
+            // TODO: Implement refund logic with payment gateway
+
+            // Cập nhật trạng thái payment
+            payment.status = "refunded";
+            await payment.save();
+
+            return payment;
+        } catch (error) {
+            console.error(`❌ Lỗi khi hoàn tiền: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async getPaymentById(paymentId) {
+        try {
+            const payment = await Payment.findById(paymentId)
+                .populate("booking", "tour user totalAmount");
+                
+            if (!payment) {
+                throw new Error("Không tìm thấy thông tin thanh toán");
+            }
+
+            return payment;
+        } catch (error) {
+            console.error(`❌ Lỗi khi lấy thông tin thanh toán: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async getPaymentsByBooking(bookingId) {
+        try {
+            const payments = await Payment.find({ booking: bookingId })
+                .sort("-createdAt");
+            return payments;
+        } catch (error) {
+            console.error(`❌ Lỗi khi lấy danh sách thanh toán: ${error.message}`);
+            throw error;
+        }
     }
 }
 
