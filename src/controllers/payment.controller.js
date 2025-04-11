@@ -3,22 +3,49 @@ const PaymentService = require("../services/payment.service");
 class PaymentController {
     async createPayment(req, res) {
         try {
-            const { bookingId, amount } = req.body;
+            const { bookingId, amount, method } = req.body;
             const userId = req.user.id;
             
-            const payment = await PaymentService.createPayment({
+            console.log("Payment request data:", { bookingId, amount, method, userId });
+            
+            // Validate required fields
+            if (!bookingId || !userId) {
+                return res.status(400).json({
+                    message: "Lỗi",
+                    error: "Thiếu thông tin booking hoặc user"
+                });
+            }
+            
+            // Tạo payment intent với Stripe
+            const paymentIntent = await PaymentService.createPayment({
                 bookingId,
                 amount,
                 userId
             });
 
+            console.log("Payment intent created:", paymentIntent);
+
+            // Tạo bản ghi payment trong database
+            const payment = await PaymentService.createPaymentRecord({
+                user: userId,
+                booking: bookingId,
+                amount,
+                method: method || "stripe",
+                status: "pending",
+                transactionId: paymentIntent.transactionId
+            });
+
             res.status(200).json({
-                message: "Payment intent created successfully",
-                data: payment
+                message: "Tạo thanh toán thành công",
+                data: {
+                    clientSecret: paymentIntent.clientSecret,
+                    payment
+                }
             });
         } catch (error) {
+            console.error("Payment creation error:", error);
             res.status(500).json({
-                message: "Error creating payment",
+                message: "Lỗi",
                 error: error.message
             });
         }

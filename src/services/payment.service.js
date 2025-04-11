@@ -8,44 +8,78 @@ const crypto = require("crypto");
 class PaymentService {
     async createPayment({ bookingId, amount, userId }) {
         try {
-            console.log("Creating payment with Stripe...");
+            console.log("Creating payment with data:", { bookingId, amount, userId });
+            
+            // Validate required fields
+            if (!bookingId || !userId) {
+                throw new Error("Thiếu thông tin booking hoặc user");
+            }
+            
+            // Chuyển đổi từ VND sang USD (1 USD = 24500 VND)
+            const VND_TO_USD_RATE = 24500;
+            const amountInUSD = amount / VND_TO_USD_RATE;
+            
+            // Kiểm tra giới hạn số tiền của Stripe
+            const MAX_STRIPE_AMOUNT = 999999.99;
+            if (amountInUSD > MAX_STRIPE_AMOUNT) {
+                const error = new Error(`Số tiền thanh toán vượt quá giới hạn của Stripe (${MAX_STRIPE_AMOUNT}$). Vui lòng liên hệ admin để được hỗ trợ.`);
+                error.status = 400; // Bad Request
+                error.code = 'PAYMENT_AMOUNT_EXCEEDED';
+                throw error;
+            }
             
             // Initialize Stripe directly in the service
             const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
                 apiVersion: '2023-10-16'
             });
             
-            // Create a payment intent
+            // Create a payment intent with amount in USD
             const paymentIntent = await stripe.paymentIntents.create({
-                amount: Math.round(amount * 100),
+                amount: Math.round(amountInUSD * 100), // Convert to cents
                 currency: "usd",
                 metadata: {
-                    bookingId,
-                    userId
+                    bookingId: bookingId.toString(),
+                    userId: userId.toString(),
+                    originalAmount: amount.toString(), // Lưu lại số tiền gốc (VND)
+                    amountInUSD: amountInUSD.toString() // Lưu lại số tiền đã chuyển đổi (USD)
                 }
             });
 
             console.log("Payment intent created:", paymentIntent.id);
 
-            // Create payment history record
+            // Create payment history record with original amount in VND
             const history = new History({
                 user: userId,
                 booking: bookingId,
-                amount,
+                amount: amount, // Lưu số tiền gốc (VND)
                 paymentMethod: PaymentMethod.Stripe,
                 status: PaymentStatus.Pending,
                 transactionId: paymentIntent.id,
                 metadata: {
-                    clientSecret: paymentIntent.client_secret
+                    clientSecret: paymentIntent.client_secret,
+                    amountInUSD: amountInUSD, // Lưu thêm số tiền đã chuyển đổi (USD)
+                    exchangeRate: VND_TO_USD_RATE // Lưu tỷ giá
                 }
             });
+
+            // Save the history record
             await history.save();
+            console.log("Payment history created:", history._id);
 
             return {
-                clientSecret: paymentIntent.client_secret
+                _id: history._id,
+                clientSecret: paymentIntent.client_secret,
+                transactionId: paymentIntent.id,
+                amountInUSD: amountInUSD, // Trả về số tiền đã chuyển đổi (USD)
+                exchangeRate: VND_TO_USD_RATE // Trả về tỷ giá
             };
         } catch (error) {
             console.error("Error creating payment:", error);
+            // Nếu là lỗi từ Stripe, thêm thông tin chi tiết
+            if (error.type && error.type.startsWith('Stripe')) {
+                error.message = `Lỗi thanh toán: ${error.message}`;
+                error.status = 400;
+            }
             throw error;
         }
     }
@@ -102,14 +136,15 @@ class PaymentService {
             .sort({ createdAt: -1 });
     }
 
-    async createPayment(paymentData) {
+    async createPaymentRecord(paymentData) {
         try {
-            // Tạo mã giao dịch ngẫu nhiên
-            const transactionId = crypto.randomBytes(16).toString("hex");
+            // Tạo mã giao dịch ngẫu nhiên nếu không có
+            if (!paymentData.transactionId) {
+                paymentData.transactionId = crypto.randomBytes(16).toString("hex");
+            }
 
             const payment = await Payment.create({
                 ...paymentData,
-                transactionId,
                 paymentDetails: new Map()
             });
 

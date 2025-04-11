@@ -2,7 +2,17 @@ const jwt = require("jsonwebtoken");
 
 class Middleware {
     verifyToken(req, res, next) {
-        const accessToken = req.cookies.accessToken;
+        // Kiểm tra token từ cookie
+        let accessToken = req.cookies.accessToken;
+        
+        // Nếu không có token trong cookie, kiểm tra từ header Authorization
+        if (!accessToken) {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                accessToken = authHeader.substring(7); // Loại bỏ 'Bearer ' từ header
+            }
+        }
+        
         if (accessToken) {
             jwt.verify(accessToken, process.env.JWT_ACCESS_TOKEN, (error, user) => {
                 if (error) {
@@ -18,7 +28,17 @@ class Middleware {
     }
 
     verifyTokenAdmin(req, res, next) {
-        const accessToken = req.cookies.accessToken;
+        // Kiểm tra token từ cookie
+        let accessToken = req.cookies.accessToken;
+        
+        // Nếu không có token trong cookie, kiểm tra từ header Authorization
+        if (!accessToken) {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                accessToken = authHeader.substring(7); // Loại bỏ 'Bearer ' từ header
+            }
+        }
+        
         if (accessToken) {
             jwt.verify(accessToken, process.env.JWT_ACCESS_TOKEN, (error, user) => {
                 if (error) {
@@ -37,7 +57,17 @@ class Middleware {
     }
 
     verifyTokenAdminAndUser(req, res, next) {
-        const accessToken = req.cookies.accessToken;
+        // Kiểm tra token từ cookie
+        let accessToken = req.cookies.accessToken;
+        
+        // Nếu không có token trong cookie, kiểm tra từ header Authorization
+        if (!accessToken) {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                accessToken = authHeader.substring(7); // Loại bỏ 'Bearer ' từ header
+            }
+        }
+        
         if (accessToken) {
             jwt.verify(accessToken, process.env.JWT_ACCESS_TOKEN, (error, user) => {
                 if (error) {

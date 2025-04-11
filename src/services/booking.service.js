@@ -1,10 +1,16 @@
 const Booking = require("../models/booking.model");
 const BookingStatus = require("../enums/booking-status");
 const PaymentService = require("./payment.service");
+const Tour = require("../models/tour.model");
 
 class BookingService {
     async create(userId, bookingData) {
         try {
+            // Validate required fields
+            if (!userId) {
+                throw new Error("User ID is required");
+            }
+
             // Tạo booking với trạng thái pending
             const newBooking = new Booking({
                 user: userId,
@@ -16,13 +22,15 @@ class BookingService {
                 totalAmount: bookingData.totalAmount
             });
 
+            // Lưu booking trước
+            await newBooking.save();
+            console.log("Booking created:", newBooking._id);
+
             // Tạo payment với đầy đủ thông tin
             const payment = await PaymentService.createPayment({
-                user: userId,
-                booking: newBooking._id,
-                amount: bookingData.totalAmount,
-                method: bookingData.paymentMethod,
-                status: "pending"
+                bookingId: newBooking._id,
+                userId: userId,
+                amount: bookingData.totalAmount
             });
 
             // Lưu payment ID vào booking
@@ -52,6 +60,16 @@ class BookingService {
 
             booking.status = BookingStatus.Confirmed;
             await booking.save();
+
+            // Cập nhật số chỗ còn lại trong tour
+            const tour = await Tour.findById(booking.tour);
+            if (!tour) {
+                throw new Error("Không tìm thấy thông tin tour");
+            }
+
+            // Giảm số chỗ còn lại bằng số người đặt
+            tour.remainingSeats -= booking.peopleCount;
+            await tour.save();
 
             return booking;
         } catch (error) {
