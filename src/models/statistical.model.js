@@ -15,6 +15,10 @@ const StatisticalSchema = new mongoose.Schema(
             type: Number,
             min: 0,
         },
+        confirmedRevenue: {
+            type: Number,
+            min: 0,
+        },
         totalUsers: {
             type: Number,
             min: 0,
@@ -29,6 +33,10 @@ const StatisticalSchema = new mongoose.Schema(
                 min: 0,
             },
             MoMo: {
+                type: Number,
+                min: 0,
+            },
+            Stripe: {
                 type: Number,
                 min: 0,
             }

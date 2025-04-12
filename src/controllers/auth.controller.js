@@ -1,4 +1,5 @@
 const AuthService = require("../services/auth.service");
+const cors = require('cors');
 
 class AuthController {
     async login(req, res) {
@@ -90,15 +91,27 @@ class AuthController {
         try {
             const { token } = req.params;
             const { newPassword } = req.body;
-            await AuthService.resetPassword(token, newPassword);
+            
+            console.log('Reset password request:', { token, newPassword });
+            
+            if (!token || !newPassword) {
+                return res.status(400).json({
+                    message: "Token và mật khẩu mới là bắt buộc"
+                });
+            }
+
+            const result = await AuthService.resetPassword(token, newPassword);
+            
             res.status(200).json({
-                message: "Mật khẩu đã được đặt lại thành công"
+                message: "Mật khẩu đã được đặt lại thành công",
+                data: result
             });
         } catch (error) {
+            console.error('Reset password error:', error);
             res.status(500).json({
                 message: "Lỗi hệ thống",
                 error: error.message
-            })
+            });
         }
     }
 }

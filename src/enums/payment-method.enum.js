@@ -1,7 +1,5 @@
 const PaymentMethod = Object.freeze({
-    VNPay: "vnpay",
-    MoMo: "momo",
-    Stripe: "stripe"
+    STRIPE: "stripe"
 });
 
 module.exports = PaymentMethod;

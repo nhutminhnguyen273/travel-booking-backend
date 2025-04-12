@@ -23,7 +23,7 @@ const PaymentSchema = new mongoose.Schema(
         method: {
             type: String,
             required: [true, "Vui lòng chọn phương thức thanh toán"],
-            enum: ["stripe", "momo", "vnpay", "bank_transfer"],
+            enum: Object.values(PaymentMethod),
         },
         status: {
             type: String,

@@ -12,9 +12,19 @@ class StatisticalService {
             // Get total bookings
             const totalBookings = await Booking.countDocuments();
 
-            // Get total revenue
-            const bookings = await Booking.find({ status: "confirmed" });
-            const totalRevenue = bookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
+            // Get total revenue (include pending bookings)
+            const bookings = await Booking.find({ status: { $in: ["pending", "confirmed"] } });
+            const totalRevenue = bookings.reduce((sum, booking) => {
+                const price = Number(booking.totalPrice) || 0;
+                return sum + price;
+            }, 0);
+
+            // Get confirmed revenue
+            const confirmedBookingDocs = await Booking.find({ status: "confirmed" });
+            const confirmedRevenue = confirmedBookingDocs.reduce((sum, booking) => {
+                const price = Number(booking.totalPrice) || 0;
+                return sum + price;
+            }, 0);
 
             // Get total users
             const totalUsers = await User.countDocuments();
@@ -23,8 +33,9 @@ class StatisticalService {
             const totalTours = await Tour.countDocuments();
 
             // Get payment methods statistics
-            const vnpayBookings = await Booking.countDocuments({ paymentMethod: "VNPay" });
-            const momoBookings = await Booking.countDocuments({ paymentMethod: "MoMo" });
+            const vnpayBookings = await Booking.countDocuments({ paymentMethod: "vnpay" });
+            const momoBookings = await Booking.countDocuments({ paymentMethod: "momo" });
+            const stripeBookings = await Booking.countDocuments({ paymentMethod: "stripe" });
 
             // Get booking status statistics
             const pendingBookings = await Booking.countDocuments({ status: "pending" });
@@ -68,11 +79,13 @@ class StatisticalService {
                 {
                     totalBookings,
                     totalRevenue,
+                    confirmedRevenue,
                     totalUsers,
                     totalTours,
                     paymentMethods: {
                         VNPay: vnpayBookings,
-                        MoMo: momoBookings
+                        MoMo: momoBookings,
+                        Stripe: stripeBookings
                     },
                     bookingStatus: {
                         pending: pendingBookings,

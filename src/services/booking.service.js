@@ -17,7 +17,7 @@ class BookingService {
                 tour: bookingData.tour,
                 schedules: bookingData.schedules,
                 peopleCount: bookingData.peopleCount,
-                paymentMethod: bookingData.paymentMethod,
+                paymentMethod: 'stripe', // Force payment method to be 'stripe'
                 status: BookingStatus.Pending,
                 totalAmount: bookingData.totalAmount
             });
@@ -30,7 +30,9 @@ class BookingService {
             const payment = await PaymentService.createPayment({
                 bookingId: newBooking._id,
                 userId: userId,
-                amount: bookingData.totalAmount
+                amount: bookingData.totalAmount,
+                method: 'stripe', // Change from paymentMethod to method
+                currency: bookingData.currency || "vnd"
             });
 
             // Lưu payment ID vào booking

@@ -20,7 +20,8 @@ class PaymentController {
             const paymentIntent = await PaymentService.createPayment({
                 bookingId,
                 amount,
-                userId
+                userId,
+                paymentMethod: method || "stripe"
             });
 
             console.log("Payment intent created:", paymentIntent);

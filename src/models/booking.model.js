@@ -40,12 +40,21 @@ const BookingSchema = new mongoose.Schema(
         paymentMethod: {
             type: String,
             enum: Object.values(PaymentMethod),
-            required: true
+            required: true,
+            default: PaymentMethod.STRIPE
         },
         status: {
             type: String,
             enum: Object.values(BookingStatus),
             default: BookingStatus.Pending
+        },
+        payment: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Payment"
+        },
+        totalAmount: {
+            type: Number,
+            required: true
         }
     },
     { timestamps: true }

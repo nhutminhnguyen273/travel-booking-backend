@@ -89,17 +89,28 @@ class AuthService {
 
     async resetPassword(token, newPassword) {
         try {
+            console.log('Finding user with token:', token);
             const user = await User.findOne({
                 resetPasswordToken: token,
                 resetPasswordExpires: { $gt: Date.now() }
             });
-            if (!user) throw new Error("Token không hợp lệ hoặc đã hết hạn");
-            user.password = newPassword;
+            
+            if (!user) {
+                throw new Error("Token không hợp lệ hoặc đã hết hạn");
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+            
+            user.password = hashedPassword;
             user.resetPasswordToken = undefined;
             user.resetPasswordExpires = undefined;
-            return await user.save();
+            
+            await user.save();
+            
+            return { success: true };
         } catch (error) {
-            console.error(`❌ Lỗi khi đặt lại mật khẩu: ${error.message}`);
+            console.error('Reset password service error:', error);
             throw error;
         }
     }
